@@ -1,0 +1,31 @@
+From 90ec276f400773ba38b3d912606c909f3f515bbe Mon Sep 17 00:00:00 2001
+From: ADAM HWANG <ghkdtkden93@naver.com>
+Date: Tue, 27 Nov 2018 00:03:14 +0900
+Subject: [PATCH 07/10] asd
+
+---
+ asd   | 0
+ sd    | 0
+ sss   | 0
+ tetet | 0
+ 4 files changed, 0 insertions(+), 0 deletions(-)
+ delete mode 100644 asd
+ delete mode 100644 sd
+ delete mode 100644 sss
+ delete mode 100644 tetet
+
+diff --git a/asd b/asd
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/sd b/sd
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/sss b/sss
+deleted file mode 100644
+index e69de29..0000000
+diff --git a/tetet b/tetet
+deleted file mode 100644
+index e69de29..0000000
+-- 
+2.17.2 (Apple Git-113)
+

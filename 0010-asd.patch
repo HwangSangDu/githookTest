@@ -1,0 +1,24 @@
+From 8f1fbe2313426dd3a517953454adf0cb34a3f482 Mon Sep 17 00:00:00 2001
+From: ADAM HWANG <ghkdtkden93@naver.com>
+Date: Tue, 27 Nov 2018 00:06:27 +0900
+Subject: [PATCH 10/10] asd
+
+---
+ asd2 | 1 +
+ asd3 | 0
+ 2 files changed, 1 insertion(+)
+ create mode 100644 asd3
+
+diff --git a/asd2 b/asd2
+index e69de29..1689899 100644
+--- a/asd2
++++ b/asd2
+@@ -0,0 +1 @@
++sss
+\ No newline at end of file
+diff --git a/asd3 b/asd3
+new file mode 100644
+index 0000000..e69de29
+-- 
+2.17.2 (Apple Git-113)
+

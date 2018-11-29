@@ -1,0 +1,22 @@
+From 083ee304e067a7297fea37f2926894f182bb5789 Mon Sep 17 00:00:00 2001
+From: ADAM HWANG <ghkdtkden93@naver.com>
+Date: Mon, 26 Nov 2018 23:49:45 +0900
+Subject: [PATCH 1/6] asd
+
+---
+ README.txt => sss | 0
+ tete2             | 0
+ 2 files changed, 0 insertions(+), 0 deletions(-)
+ rename README.txt => sss (100%)
+ delete mode 100644 tete2
+
+diff --git a/README.txt b/sss
+similarity index 100%
+rename from README.txt
+rename to sss
+diff --git a/tete2 b/tete2
+deleted file mode 100644
+index e69de29..0000000
+-- 
+2.17.2 (Apple Git-113)
+

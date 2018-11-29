@@ -1,0 +1,16 @@
+From 0414dfc0afa5ffc1441a94802a31fdee886877d5 Mon Sep 17 00:00:00 2001
+From: ADAM HWANG <ghkdtkden93@naver.com>
+Date: Mon, 26 Nov 2018 23:27:44 +0900
+Subject: [PATCH 03/10] asd
+
+---
+ tetet | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 tetet
+
+diff --git a/tetet b/tetet
+new file mode 100644
+index 0000000..e69de29
+-- 
+2.17.2 (Apple Git-113)
+

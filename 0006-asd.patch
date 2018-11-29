@@ -1,0 +1,16 @@
+From c7c8fc4b71d42f6caa6c29d4bafbc87b134e66db Mon Sep 17 00:00:00 2001
+From: ADAM HWANG <ghkdtkden93@naver.com>
+Date: Mon, 26 Nov 2018 23:50:12 +0900
+Subject: [PATCH 06/10] asd
+
+---
+ sd | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 sd
+
+diff --git a/sd b/sd
+new file mode 100644
+index 0000000..e69de29
+-- 
+2.17.2 (Apple Git-113)
+
