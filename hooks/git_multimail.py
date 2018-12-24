@@ -3,6 +3,40 @@
 
 __version__ = '1.5.dev'
 
+# coding: utf-8
+C_END     = "\033[0m"
+C_BOLD    = "\033[1m"
+C_INVERSE = "\033[7m"
+ 
+C_BLACK  = "\033[30m"
+C_RED    = "\033[31m"
+C_GREEN  = "\033[32m"
+C_YELLOW = "\033[33m"
+C_BLUE   = "\033[34m"
+C_PURPLE = "\033[35m"
+C_CYAN   = "\033[36m"
+C_WHITE  = "\033[37m"
+ 
+C_BGBLACK  = "\033[40m"
+C_BGRED    = "\033[41m"
+C_BGGREEN  = "\033[42m"
+C_BGYELLOW = "\033[43m"
+C_BGBLUE   = "\033[44m"
+C_BGPURPLE = "\033[45m"
+C_BGCYAN   = "\033[46m"
+C_BGWHITE  = "\033[47m"
+def printComment(str):
+  print(C_BOLD + C_GREEN)
+  print(str)
+  print(C_END)
+  # print(C_BOLD +  C_GREEN + str + C_END)
+def printError(str):
+  print(C_BOLD + C_RED)
+  print(str)
+  print(C_END)
+  # print(C_BOLD +  C_RED + str + C_END)
+
+
 # Copyright (c) 2015-2016 Matthieu Moy and others
 # Copyright (c) 2012-2014 Michael Haggerty and others
 # Derived from contrib/hooks/post-receive-email, which is
@@ -215,20 +249,78 @@ X-Git-Multimail-Version: %(multimail_version)s
 Auto-Submitted: auto-generated
 """
 
-REFCHANGE_INTRO_TEMPLATE = """\
-This is an automated email from the git hooks/post-receive script.
+# Author: hamatani
+# Date: Fri Dec 7 14:33:39 2018
+# New Revision: 19519
 
-%(pusher)s pushed a change to %(refname_type)s %(short_refname)s
-in repository %(repo_shortname)s.
+# Log:
+# correct CLAMP loopbeat LPLG_4 - 1 -> LPLG_4
+
+# Modified:
+# mcs/branches/FTT_motion_loop_delay_board/app/reverb_project/app_stereo_delay_task.c
+# mcs/branches/FTT_motion_loop_delay_board/app/reverb_project/app_user_interface.c
+
+# REFCHANGE_INTRO_TEMPLATE = """\
+# Author : %(fromaddr)s
+# Date : %(send_date)s
+# OLD Revision : %(oldrev)s
+# New Revision : %(newrev)s
+
+# LOG : 
+
+# """
+
+
+# This is an automated email from the git hooks/post-receive script.
+# %(pusher)s pushed a change to %(refname_type)s %(short_refname)s
+# in repository %(repo_shortname)s.
+"""
+X-Git-Repo: %(repo_shortname)s
+X-Git-Refname: %(refname)s
+X-Git-Reftype: %(refname_type)s
+X-Git-Oldrev: %(oldrev)s
+X-Git-Newrev: %(newrev)s
 
 """
 
 
-FOOTER_TEMPLATE = """\
+# REFCHANGE_INTRO_TEMPLATE = """\
 
+# REFCHANGE_INTRO_TEMPLATE
+
+# Author : %(pusher)s
+# Date : 
+# Newrev: %(newrev)s
+# oldrev: %(oldrev)s
+
+# LOG : 
+# %(refname_type)s
+# %(recipients)s
+# """
+
+
+FOOTER_TEMPLATE = """\
 -- \n\
 To stop receiving notification emails like this one, please contact
 %(administrator)s.
+"""
+
+
+REFCHANGE_INTRO_TEMPLATE = """\
+Author : %(pusher)s
+REFNAME : %(short_refname)s
+Repository %(repo_shortname)s
+Date : %(send_date)s
+
+LOG : 
+
+ * -- * -- New   %(refname)s (%(newrev_short)s)
+            \\
+             O -- O -- Old   (%(oldrev_short)s)
+
+
+MODIFIED : 
+
 """
 
 
@@ -348,7 +440,7 @@ Auto-Submitted: auto-generated
 """
 
 REVISION_INTRO_TEMPLATE = """\
-This is an automated email from the git hooks/post-receive script.
+REVISION_INTRO_TEMPLATE
 
 %(pusher)s pushed a commit to %(refname_type)s %(short_refname)s
 in repository %(repo_shortname)s.
@@ -393,14 +485,25 @@ Auto-Submitted: auto-generated
 """
 
 COMBINED_INTRO_TEMPLATE = """\
-This is an automated email from the git hooks/post-receive script.
+COMBINED_INTRO_TEMPLATE
+Author : %(pusher)s
+REFNAME : %(short_refname)s
+Repository %(repo_shortname)s
+Date : %(send_date)s
 
-%(pusher)s pushed a commit to %(refname_type)s %(short_refname)s
-in repository %(repo_shortname)s.
+LOG : 
+
+ * -- * -- New   %(refname)s (%(newrev_short)s)
+            \\
+             O -- O -- Old   (%(oldrev_short)s)
+
+
+MODIFIED : 
 
 """
 
-COMBINED_FOOTER_TEMPLATE = FOOTER_TEMPLATE
+COMBINED_FOOTER_TEMPLATE = """
+"""
 
 
 class CommandError(Exception):
@@ -866,7 +969,13 @@ class Change(object):
     def expand_lines(self, template, html_escape_val=False, **extra_values):
         """Break template into lines and expand each line."""
 
+        send_date = IncrementalDateTime()
+        extra_values = {'send_date': next(send_date)}
+
+
+        printComment("Change expand_lines")
         values = self.get_values(**extra_values)
+        printError(values)
         if html_escape_val:
             for k in values:
                 if is_string(values[k]):
@@ -879,7 +988,7 @@ class Change(object):
 
         Encode values and split up lines that are too long.  Silently
         skip lines that contain references to unknown variables."""
-
+        printComment("Change expand_header_lines")
         values = self.get_values(**extra_values)
         if self._contains_html_diff:
             self._content_type = 'html'
@@ -909,6 +1018,7 @@ class Change(object):
                     yield splitline
 
     def generate_email_header(self):
+        printComment("Change generate_email_header")
         """Generate the RFC 2822 email headers for this Change, a line at a time.
 
         The output should not include the trailing blank line."""
@@ -961,7 +1071,9 @@ class Change(object):
             for line in lines:
                 yield line
 
+    ##generate_email
     def generate_email(self, push, body_filter=None, extra_header_values={}):
+        printComment("Change generate_email")
         """Generate an email describing this change.
 
         Iterate over the lines (including the header lines) of an
@@ -972,21 +1084,57 @@ class Change(object):
         The extra_header_values field is received as a dict and not as
         **kwargs, to allow passing other keyword arguments in the
         future (e.g. passing extra values to generate_email_intro()"""
-
+        printError(extra_header_values)
+        self.expand(COMBINED_INTRO_TEMPLATE, **extra_header_values)
         for line in self.generate_email_header(**extra_header_values):
             yield line
         yield '\n'
         html_escape_val = (self.environment.html_in_intro and
                            self._contains_html_diff)
+
         intro = self.generate_email_intro(html_escape_val)
+        # printComment(intro)
         if not self.environment.html_in_intro:
             intro = self._wrap_for_html(intro)
         for line in intro:
             yield line
 
+        # for line in self.generate_revision_change_summary(push):
+        # yield line
+        # self.generate_revision_change_summary(push)
+        # = read_git_output(['rev-parse', '--verify', newrev]),
         if self.environment.commitBrowseURL:
             for line in self.generate_browse_link(self.environment.commitBrowseURL):
                 yield line
+
+        
+        try:
+            # prevtag = read_git_output(['diff', 'HEAD^'])
+            # prevdiff1 = read_git_output(['diff', '--dirstat', 'HEAD^'])
+            prevdiff2 = read_git_output(['diff', '--stat', 'HEAD^'])
+
+            # prevdiff3 = read_git_output(['diff', '--name-status', 'HEAD'])
+            # git diff --dirstat HEAD^ 
+            # git diff --shortstat HEAD^
+            # git diff --name-status HEAD^
+        except CommandError:
+        
+            prevdiff2 = None
+            
+        # if prevdiff1:
+            # yield '%s\n' % (prevdiff1)
+        printComment(prevdiff2)
+        # printComment(prevdiff2)
+        # printComment(prevdiff2)
+        if prevdiff2:
+            yield '%s\n\n' % (prevdiff2)
+
+        # if prevdiff3:
+        #     yield '%s\n' % (prevdiff3)
+
+
+
+
 
         body = self.generate_email_body(push)
         if body_filter is not None:
@@ -1056,355 +1204,6 @@ class Change(object):
         for line in footer:
             yield line
 
-    def get_specific_fromaddr(self):
-        """For kinds of Changes which specify it, return the kind-specific
-        From address to use."""
-        return None
-
-
-class Revision(Change):
-    """A Change consisting of a single git commit."""
-
-    CC_RE = re.compile(r'^\s*C[Cc]:\s*(?P<to>[^#]+@[^\s#]*)\s*(#.*)?$')
-
-    def __init__(self, reference_change, rev, num, tot):
-        Change.__init__(self, reference_change.environment)
-        self.reference_change = reference_change
-        self.rev = rev
-        self.change_type = self.reference_change.change_type
-        self.refname = self.reference_change.refname
-        self.num = num
-        self.tot = tot
-        self.author = read_git_output(['log', '--no-walk', '--format=%aN <%aE>', self.rev.sha1])
-        self.recipients = self.environment.get_revision_recipients(self)
-
-        self.parents = read_git_lines(['show', '--no-patch', '--format=%P',
-                                      self.rev.sha1])[0].split()
-
-        self.cc_recipients = ''
-        if self.environment.get_scancommitforcc():
-            self.cc_recipients = ', '.join(to.strip() for to in self._cc_recipients())
-            if self.cc_recipients:
-                self.environment.log_msg(
-                    'Add %s to CC for %s' % (self.cc_recipients, self.rev.sha1))
-
-    def _cc_recipients(self):
-        cc_recipients = []
-        message = read_git_output(['log', '--no-walk', '--format=%b', self.rev.sha1])
-        lines = message.strip().split('\n')
-        for line in lines:
-            m = re.match(self.CC_RE, line)
-            if m:
-                cc_recipients.append(m.group('to'))
-
-        return cc_recipients
-
-    def _compute_values(self):
-        values = Change._compute_values(self)
-
-        oneline = read_git_output(
-            ['log', '--format=%s', '--no-walk', self.rev.sha1]
-            )
-
-        max_subject_length = self.environment.get_max_subject_length()
-        if max_subject_length > 0 and len(oneline) > max_subject_length:
-            oneline = oneline[:max_subject_length - 6] + ' [...]'
-
-        values['rev'] = self.rev.sha1
-        values['parents'] = ' '.join(self.parents)
-        values['rev_short'] = self.rev.short
-        values['change_type'] = self.change_type
-        values['refname'] = self.refname
-        values['newrev'] = self.rev.sha1
-        values['short_refname'] = self.reference_change.short_refname
-        values['refname_type'] = self.reference_change.refname_type
-        values['reply_to_msgid'] = self.reference_change.msgid
-        values['thread_index'] = self.reference_change.thread_index
-        values['num'] = self.num
-        values['tot'] = self.tot
-        values['recipients'] = self.recipients
-        if self.cc_recipients:
-            values['cc_recipients'] = self.cc_recipients
-        values['oneline'] = oneline
-        values['author'] = self.author
-
-        reply_to = self.environment.get_reply_to_commit(self)
-        if reply_to:
-            values['reply_to'] = reply_to
-
-        return values
-
-    def generate_email_header(self, **extra_values):
-        for line in self.expand_header_lines(
-                REVISION_HEADER_TEMPLATE, **extra_values
-                ):
-            yield line
-
-    def generate_browse_link(self, base_url):
-        if '%(' not in base_url:
-            base_url += '%(id)s'
-        url = "".join(self.expand_lines(base_url))
-        if self._content_type == 'html':
-            for line in self.expand_lines(LINK_HTML_TEMPLATE,
-                                          html_escape_val=True,
-                                          browse_url=url):
-                yield line
-        elif self._content_type == 'plain':
-            for line in self.expand_lines(LINK_TEXT_TEMPLATE,
-                                          html_escape_val=False,
-                                          browse_url=url):
-                yield line
-        else:
-            raise NotImplementedError("Content-type %s unsupported. Please report it as a bug.")
-
-    def generate_email_intro(self, html_escape_val=False):
-        for line in self.expand_lines(REVISION_INTRO_TEMPLATE,
-                                      html_escape_val=html_escape_val):
-            yield line
-
-    def generate_email_body(self, push):
-        """Show this revision."""
-
-        for line in read_git_lines(
-                ['log'] + self.environment.commitlogopts + ['-1', self.rev.sha1],
-                keepends=True,
-                errors='replace'):
-            if line.startswith('Date:   ') and self.environment.date_substitute:
-                yield self.environment.date_substitute + line[len('Date:   '):]
-            else:
-                yield line
-
-    def generate_email_footer(self, html_escape_val):
-        return self.expand_lines(REVISION_FOOTER_TEMPLATE,
-                                 html_escape_val=html_escape_val)
-
-    def generate_email(self, push, body_filter=None, extra_header_values={}):
-        self._contains_diff()
-        return Change.generate_email(self, push, body_filter, extra_header_values)
-
-    def get_specific_fromaddr(self):
-        return self.environment.from_commit
-
-
-class ReferenceChange(Change):
-    """A Change to a Git reference.
-
-    An abstract class representing a create, update, or delete of a
-    Git reference.  Derived classes handle specific types of reference
-    (e.g., tags vs. branches).  These classes generate the main
-    reference change email summarizing the reference change and
-    whether it caused any any commits to be added or removed.
-
-    ReferenceChange objects are usually created using the static
-    create() method, which has the logic to decide which derived class
-    to instantiate."""
-
-    REF_RE = re.compile(r'^refs\/(?P<area>[^\/]+)\/(?P<shortname>.*)$')
-
-    @staticmethod
-    def create(environment, oldrev, newrev, refname):
-        """Return a ReferenceChange object representing the change.
-
-        Return an object that represents the type of change that is being
-        made. oldrev and newrev should be SHA1s or ZEROS."""
-
-        old = GitObject(oldrev)
-        new = GitObject(newrev)
-        rev = new or old
-
-        # The revision type tells us what type the commit is, combined with
-        # the location of the ref we can decide between
-        #  - working branch
-        #  - tracking branch
-        #  - unannotated tag
-        #  - annotated tag
-        m = ReferenceChange.REF_RE.match(refname)
-        if m:
-            area = m.group('area')
-            short_refname = m.group('shortname')
-        else:
-            area = ''
-            short_refname = refname
-
-        if rev.type == 'tag':
-            # Annotated tag:
-            klass = AnnotatedTagChange
-        elif rev.type == 'commit':
-            if area == 'tags':
-                # Non-annotated tag:
-                klass = NonAnnotatedTagChange
-            elif area == 'heads':
-                # Branch:
-                klass = BranchChange
-            elif area == 'remotes':
-                # Tracking branch:
-                environment.log_warning(
-                    '*** Push-update of tracking branch %r\n'
-                    '***  - incomplete email generated.'
-                    % (refname,)
-                    )
-                klass = OtherReferenceChange
-            else:
-                # Some other reference namespace:
-                environment.log_warning(
-                    '*** Push-update of strange reference %r\n'
-                    '***  - incomplete email generated.'
-                    % (refname,)
-                    )
-                klass = OtherReferenceChange
-        else:
-            # Anything else (is there anything else?)
-            environment.log_warning(
-                '*** Unknown type of update to %r (%s)\n'
-                '***  - incomplete email generated.'
-                % (refname, rev.type,)
-                )
-            klass = OtherReferenceChange
-
-        return klass(
-            environment,
-            refname=refname, short_refname=short_refname,
-            old=old, new=new, rev=rev,
-            )
-
-    @staticmethod
-    def make_thread_index():
-        """Return a string appropriate for the Thread-Index header,
-        needed by MS Outlook to get threading right.
-
-        The format is (base64-encoded):
-        - 1 byte must be 1
-        - 5 bytes encode a date (hardcoded here)
-        - 16 bytes for a globally unique identifier
-
-        FIXME: Unfortunately, even with the Thread-Index field, MS
-        Outlook doesn't seem to do the threading reliably (see
-        https://github.com/git-multimail/git-multimail/pull/194).
-        """
-        thread_index = b'\x01\x00\x00\x12\x34\x56' + uuid.uuid4().bytes
-        return base64.standard_b64encode(thread_index).decode('ascii')
-
-    def __init__(self, environment, refname, short_refname, old, new, rev):
-        Change.__init__(self, environment)
-        self.change_type = {
-            (False, True): 'create',
-            (True, True): 'update',
-            (True, False): 'delete',
-            }[bool(old), bool(new)]
-        self.refname = refname
-        self.short_refname = short_refname
-        self.old = old
-        self.new = new
-        self.rev = rev
-        self.msgid = make_msgid()
-        self.thread_index = self.make_thread_index()
-        self.diffopts = environment.diffopts
-        self.graphopts = environment.graphopts
-        self.logopts = environment.logopts
-        self.commitlogopts = environment.commitlogopts
-        self.showgraph = environment.refchange_showgraph
-        self.showlog = environment.refchange_showlog
-
-        self.header_template = REFCHANGE_HEADER_TEMPLATE
-        self.intro_template = REFCHANGE_INTRO_TEMPLATE
-        self.footer_template = FOOTER_TEMPLATE
-
-    def _compute_values(self):
-        values = Change._compute_values(self)
-
-        values['change_type'] = self.change_type
-        values['refname_type'] = self.refname_type
-        values['refname'] = self.refname
-        values['short_refname'] = self.short_refname
-        values['msgid'] = self.msgid
-        values['thread_index'] = self.thread_index
-        values['recipients'] = self.recipients
-        values['oldrev'] = str(self.old)
-        values['oldrev_short'] = self.old.short
-        values['newrev'] = str(self.new)
-        values['newrev_short'] = self.new.short
-
-        if self.old:
-            values['oldrev_type'] = self.old.type
-        if self.new:
-            values['newrev_type'] = self.new.type
-
-        reply_to = self.environment.get_reply_to_refchange(self)
-        if reply_to:
-            values['reply_to'] = reply_to
-
-        return values
-
-    def send_single_combined_email(self, known_added_sha1s):
-        """Determine if a combined refchange/revision email should be sent
-
-        If there is only a single new (non-merge) commit added by a
-        change, it is useful to combine the ReferenceChange and
-        Revision emails into one.  In such a case, return the single
-        revision; otherwise, return None.
-
-        This method is overridden in BranchChange."""
-
-        return None
-
-    def generate_combined_email(self, push, revision, body_filter=None, extra_header_values={}):
-        """Generate an email describing this change AND specified revision.
-
-        Iterate over the lines (including the header lines) of an
-        email describing this change.  If body_filter is not None,
-        then use it to filter the lines that are intended for the
-        email body.
-
-        The extra_header_values field is received as a dict and not as
-        **kwargs, to allow passing other keyword arguments in the
-        future (e.g. passing extra values to generate_email_intro()
-
-        This method is overridden in BranchChange."""
-
-        raise NotImplementedError
-
-    def get_subject(self):
-        template = {
-            'create': REF_CREATED_SUBJECT_TEMPLATE,
-            'update': REF_UPDATED_SUBJECT_TEMPLATE,
-            'delete': REF_DELETED_SUBJECT_TEMPLATE,
-            }[self.change_type]
-        return self.expand(template)
-
-    def generate_email_header(self, **extra_values):
-        if 'subject' not in extra_values:
-            extra_values['subject'] = self.get_subject()
-
-        for line in self.expand_header_lines(
-                self.header_template, **extra_values
-                ):
-            yield line
-
-    def generate_email_intro(self, html_escape_val=False):
-        for line in self.expand_lines(self.intro_template,
-                                      html_escape_val=html_escape_val):
-            yield line
-
-    def generate_email_body(self, push):
-        """Call the appropriate body-generation routine.
-
-        Call one of generate_create_summary() /
-        generate_update_summary() / generate_delete_summary()."""
-
-        change_summary = {
-            'create': self.generate_create_summary,
-            'delete': self.generate_delete_summary,
-            'update': self.generate_update_summary,
-            }[self.change_type](push)
-        for line in change_summary:
-            yield line
-
-        for line in self.generate_revision_change_summary(push):
-            yield line
-
-    def generate_email_footer(self, html_escape_val):
-        return self.expand_lines(self.footer_template,
-                                 html_escape_val=html_escape_val)
 
     def generate_revision_change_graph(self, push):
         if self.showgraph:
@@ -1445,7 +1244,7 @@ class ReferenceChange(Change):
 
     def generate_revision_change_summary(self, push):
         """Generate a summary of the revisions added/removed by this change."""
-
+        printComment("ReferenceChange generate_revision_change_summary")
         if self.new.commit_sha1 and not self.old.commit_sha1:
             # A new reference was created.  List the new revisions
             # brought by the new reference (i.e., those revisions that
@@ -1647,13 +1446,610 @@ class ReferenceChange(Change):
             )
         yield '\n'
 
+
+    def get_specific_fromaddr(self):
+        """For kinds of Changes which specify it, return the kind-specific
+        From address to use."""
+        return None
+
+
+class Revision(Change):
+    """A Change consisting of a single git commit."""
+
+    CC_RE = re.compile(r'^\s*C[Cc]:\s*(?P<to>[^#]+@[^\s#]*)\s*(#.*)?$')
+
+    def __init__(self, reference_change, rev, num, tot):
+        Change.__init__(self, reference_change.environment)
+        self.reference_change = reference_change
+        self.rev = rev
+        self.change_type = self.reference_change.change_type
+        self.refname = self.reference_change.refname
+        self.num = num
+        self.tot = tot
+        self.author = read_git_output(['log', '--no-walk', '--format=%aN <%aE>', self.rev.sha1])
+        self.recipients = self.environment.get_revision_recipients(self)
+
+        self.parents = read_git_lines(['show', '--no-patch', '--format=%P',
+                                      self.rev.sha1])[0].split()
+
+        self.cc_recipients = ''
+        if self.environment.get_scancommitforcc():
+            self.cc_recipients = ', '.join(to.strip() for to in self._cc_recipients())
+            if self.cc_recipients:
+                self.environment.log_msg(
+                    'Add %s to CC for %s' % (self.cc_recipients, self.rev.sha1))
+
+    def _cc_recipients(self):
+        cc_recipients = []
+        message = read_git_output(['log', '--no-walk', '--format=%b', self.rev.sha1])
+        lines = message.strip().split('\n')
+        for line in lines:
+            m = re.match(self.CC_RE, line)
+            if m:
+                cc_recipients.append(m.group('to'))
+
+        return cc_recipients
+
+    def _compute_values(self):
+        values = Change._compute_values(self)
+
+        oneline = read_git_output(
+            ['log', '--format=%s', '--no-walk', self.rev.sha1]
+            )
+
+        max_subject_length = self.environment.get_max_subject_length()
+        if max_subject_length > 0 and len(oneline) > max_subject_length:
+            oneline = oneline[:max_subject_length - 6] + ' [...]'
+
+        values['rev'] = self.rev.sha1
+        values['parents'] = ' '.join(self.parents)
+        values['rev_short'] = self.rev.short
+        values['change_type'] = self.change_type
+        values['refname'] = self.refname
+        values['newrev'] = self.rev.sha1
+        values['short_refname'] = self.reference_change.short_refname
+        values['refname_type'] = self.reference_change.refname_type
+        values['reply_to_msgid'] = self.reference_change.msgid
+        values['thread_index'] = self.reference_change.thread_index
+        values['num'] = self.num
+        values['tot'] = self.tot
+        values['recipients'] = self.recipients
+        if self.cc_recipients:
+            values['cc_recipients'] = self.cc_recipients
+        values['oneline'] = oneline
+        values['author'] = self.author
+
+        reply_to = self.environment.get_reply_to_commit(self)
+        if reply_to:
+            values['reply_to'] = reply_to
+
+        return values
+
+    def generate_email_header(self, **extra_values):
+        printComment("Revision generate_email_header")
+        for line in self.expand_header_lines(
+                REVISION_HEADER_TEMPLATE, **extra_values
+                ):
+            yield line
+
+    def generate_browse_link(self, base_url):
+        if '%(' not in base_url:
+            base_url += '%(id)s'
+        url = "".join(self.expand_lines(base_url))
+        if self._content_type == 'html':
+            for line in self.expand_lines(LINK_HTML_TEMPLATE,
+                                          html_escape_val=True,
+                                          browse_url=url):
+                yield line
+        elif self._content_type == 'plain':
+            for line in self.expand_lines(LINK_TEXT_TEMPLATE,
+                                          html_escape_val=False,
+                                          browse_url=url):
+                yield line
+        else:
+            raise NotImplementedError("Content-type %s unsupported. Please report it as a bug.")
+
+    def generate_email_intro(self, html_escape_val=False):
+        printComment("Revision generate_email_intro")
+        for line in self.expand_lines(REVISION_INTRO_TEMPLATE,
+                                      html_escape_val=html_escape_val):
+            yield line
+
+    def generate_email_body(self, push):
+        """Show this revision."""
+
+        for line in read_git_lines(
+                ['log'] + self.environment.commitlogopts + ['-1', self.rev.sha1],
+                keepends=True,
+                errors='replace'):
+            if line.startswith('Date:   ') and self.environment.date_substitute:
+                yield self.environment.date_substitute + line[len('Date:   '):]
+            else:
+                yield line
+
+    def generate_email_footer(self, html_escape_val):
+        return self.expand_lines(REVISION_FOOTER_TEMPLATE,
+                                 html_escape_val=html_escape_val)
+
+    def generate_email(self, push, body_filter=None, extra_header_values={}):
+        self._contains_diff()
+        return Change.generate_email(self, push, body_filter, extra_header_values)
+
+    def get_specific_fromaddr(self):
+        return self.environment.from_commit
+
+##ReferenceChange
+class ReferenceChange(Change):
+    """A Change to a Git reference.
+
+    An abstract class representing a create, update, or delete of a
+    Git reference.  Derived classes handle specific types of reference
+    (e.g., tags vs. branches).  These classes generate the main
+    reference change email summarizing the reference change and
+    whether it caused any any commits to be added or removed.
+
+    ReferenceChange objects are usually created using the static
+    create() method, which has the logic to decide which derived class
+    to instantiate."""
+
+    REF_RE = re.compile(r'^refs\/(?P<area>[^\/]+)\/(?P<shortname>.*)$')
+
+    @staticmethod
+    def create(environment, oldrev, newrev, refname):
+        """Return a ReferenceChange object representing the change.
+
+        Return an object that represents the type of change that is being
+        made. oldrev and newrev should be SHA1s or ZEROS."""
+
+        old = GitObject(oldrev)
+        new = GitObject(newrev)
+        rev = new or old
+
+        # The revision type tells us what type the commit is, combined with
+        # the location of the ref we can decide between
+        #  - working branch
+        #  - tracking branch
+        #  - unannotated tag
+        #  - annotated tag
+        m = ReferenceChange.REF_RE.match(refname)
+        if m:
+            area = m.group('area')
+            short_refname = m.group('shortname')
+        else:
+            area = ''
+            short_refname = refname
+
+        if rev.type == 'tag':
+            # Annotated tag:
+            klass = AnnotatedTagChange
+        elif rev.type == 'commit':
+            if area == 'tags':
+                # Non-annotated tag:
+                klass = NonAnnotatedTagChange
+            elif area == 'heads':
+                # Branch:
+                klass = BranchChange
+            elif area == 'remotes':
+                # Tracking branch:
+                environment.log_warning(
+                    '*** Push-update of tracking branch %r\n'
+                    '***  - incomplete email generated.'
+                    % (refname,)
+                    )
+                klass = OtherReferenceChange
+            else:
+                # Some other reference namespace:
+                environment.log_warning(
+                    '*** Push-update of strange reference %r\n'
+                    '***  - incomplete email generated.'
+                    % (refname,)
+                    )
+                klass = OtherReferenceChange
+        else:
+            # Anything else (is there anything else?)
+            environment.log_warning(
+                '*** Unknown type of update to %r (%s)\n'
+                '***  - incomplete email generated.'
+                % (refname, rev.type,)
+                )
+            klass = OtherReferenceChange
+
+        return klass(
+            environment,
+            refname=refname, short_refname=short_refname,
+            old=old, new=new, rev=rev,
+            )
+
+    @staticmethod
+    def make_thread_index():
+        """Return a string appropriate for the Thread-Index header,
+        needed by MS Outlook to get threading right.
+
+        The format is (base64-encoded):
+        - 1 byte must be 1
+        - 5 bytes encode a date (hardcoded here)
+        - 16 bytes for a globally unique identifier
+
+        FIXME: Unfortunately, even with the Thread-Index field, MS
+        Outlook doesn't seem to do the threading reliably (see
+        https://github.com/git-multimail/git-multimail/pull/194).
+        """
+        thread_index = b'\x01\x00\x00\x12\x34\x56' + uuid.uuid4().bytes
+        return base64.standard_b64encode(thread_index).decode('ascii')
+
+    def __init__(self, environment, refname, short_refname, old, new, rev):
+        Change.__init__(self, environment)
+        self.change_type = {
+            (False, True): 'create',
+            (True, True): 'update',
+            (True, False): 'delete',
+            }[bool(old), bool(new)]
+        self.refname = refname
+        self.short_refname = short_refname
+        self.old = old
+        self.new = new
+        self.rev = rev
+        self.msgid = make_msgid()
+        self.thread_index = self.make_thread_index()
+        self.diffopts = environment.diffopts
+        self.graphopts = environment.graphopts
+        self.logopts = environment.logopts
+        self.commitlogopts = environment.commitlogopts
+        self.showgraph = environment.refchange_showgraph
+        self.showlog = environment.refchange_showlog
+        self.header_template = REFCHANGE_HEADER_TEMPLATE
+        self.intro_template = REFCHANGE_INTRO_TEMPLATE
+        self.footer_template = FOOTER_TEMPLATE
+
+    def _compute_values(self):
+        values = Change._compute_values(self)
+        values['change_type'] = self.change_type
+        values['refname_type'] = self.refname_type
+        values['refname'] = self.refname
+        values['short_refname'] = self.short_refname
+        values['msgid'] = self.msgid
+        values['thread_index'] = self.thread_index
+        values['recipients'] = self.recipients
+        values['oldrev'] = str(self.old)
+        values['oldrev_short'] = self.old.short
+        values['newrev'] = str(self.new)
+        values['newrev_short'] = self.new.short
+        if self.old:
+            values['oldrev_type'] = self.old.type
+        if self.new:
+            values['newrev_type'] = self.new.type
+        reply_to = self.environment.get_reply_to_refchange(self)
+        if reply_to:
+            values['reply_to'] = reply_to
+
+        return values
+
+    def send_single_combined_email(self, known_added_sha1s):
+        """Determine if a combined refchange/revision email should be sent
+
+        If there is only a single new (non-merge) commit added by a
+        change, it is useful to combine the ReferenceChange and
+        Revision emails into one.  In such a case, return the single
+        revision; otherwise, return None.
+
+        This method is overridden in BranchChange."""
+
+        return None
+
+    def generate_combined_email(self, push, revision, body_filter=None, extra_header_values={}):
+        """Generate an email describing this change AND specified revision.
+
+        Iterate over the lines (including the header lines) of an
+        email describing this change.  If body_filter is not None,
+        then use it to filter the lines that are intended for the
+        email body.
+
+        The extra_header_values field is received as a dict and not as
+        **kwargs, to allow passing other keyword arguments in the
+        future (e.g. passing extra values to generate_email_intro()
+
+        This method is overridden in BranchChange."""
+
+        raise NotImplementedError
+
+    def get_subject(self):
+        template = {
+            'create': REF_CREATED_SUBJECT_TEMPLATE,
+            'update': REF_UPDATED_SUBJECT_TEMPLATE,
+            'delete': REF_DELETED_SUBJECT_TEMPLATE,
+            }[self.change_type]
+        return self.expand(template)
+
+    def generate_email_header(self, **extra_values):
+        printComment("ReferenceChange generate_email_header")
+        if 'subject' not in extra_values:
+            extra_values['subject'] = self.get_subject()
+
+        for line in self.expand_header_lines(
+                self.header_template, **extra_values
+                ):
+            yield line
+
+    def generate_email_intro(self, html_escape_val=False):
+        printComment("ReferenceChange generate_email_intro")
+        for line in self.expand_lines(self.intro_template,
+                                      html_escape_val=html_escape_val):
+            yield line
+
+    def generate_email_body(self, push):
+        """Call the appropriate body-generation routine.
+
+        Call one of generate_create_summary() /
+        generate_update_summary() / generate_delete_summary()."""
+
+        change_summary = {
+            'create': self.generate_create_summary,
+            'delete': self.generate_delete_summary,
+            'update': self.generate_update_summary,
+            }[self.change_type](push)
+        for line in change_summary:
+            yield line
+        
+        
+        for line in self.generate_revision_change_summary(push):
+            yield line
+
+    def generate_email_footer(self, html_escape_val):
+        return self.expand_lines(self.footer_template,
+                                 html_escape_val=html_escape_val)
+
+    def generate_revision_change_graph(self, push):
+        if self.showgraph:
+            args = ['--graph'] + self.graphopts
+            for newold in ('new', 'old'):
+                has_newold = False
+                spec = push.get_commits_spec(newold, self)
+                for line in git_log(spec, args=args, keepends=True):
+                    if not has_newold:
+                        has_newold = True
+                        yield '\n'
+                        yield 'Graph of %s commits:\n\n' % (
+                            {'new': 'new', 'old': 'discarded'}[newold],)
+                    yield '  ' + line
+                if has_newold:
+                    yield '\n'
+
+    def generate_revision_change_log(self, new_commits_list):
+        if self.showlog:
+            yield '\n'
+            yield 'Detailed log of new commits:\n\n'
+            for line in read_git_lines(
+                    ['log', '--no-walk'] +
+                    self.logopts +
+                    new_commits_list +
+                    ['--'],
+                    keepends=True,
+                    ):
+                yield line
+
+    def generate_new_revision_summary(self, tot, new_commits_list, push):
+        for line in self.expand_lines(NEW_REVISIONS_TEMPLATE, tot=tot):
+            yield line
+        for line in self.generate_revision_change_graph(push):
+            yield line
+        for line in self.generate_revision_change_log(new_commits_list):
+            yield line
+
+    def generate_revision_change_summary(self, push):
+        """Generate a summary of the revisions added/removed by this change."""
+        printComment("ReferenceChange generate_revision_change_summary")
+        if self.new.commit_sha1 and not self.old.commit_sha1:
+            # A new reference was created.  List the new revisions
+            # brought by the new reference (i.e., those revisions that
+            # were not in the repository before this reference
+            # change).
+
+            printComment("path1")
+
+            sha1s = list(push.get_new_commits(self))
+            sha1s.reverse()
+            tot = len(sha1s)
+            new_revisions = [
+                Revision(self, GitObject(sha1), num=i + 1, tot=tot)
+                for (i, sha1) in enumerate(sha1s)
+                ]
+            
+            if new_revisions:
+                yield self.expand('This %(refname_type)s includes the following new commits:\n')
+                yield '\n'
+                for r in new_revisions:
+                    (sha1, subject) = r.rev.get_summary()
+                    yield r.expand(
+                        BRIEF_SUMMARY_TEMPLATE, action='new', text=subject,
+                        )
+                yield '\n'
+                for line in self.generate_new_revision_summary(
+                        tot, [r.rev.sha1 for r in new_revisions], push):
+                    yield line
+            else:
+                for line in self.expand_lines(NO_NEW_REVISIONS_TEMPLATE):
+                    yield line
+
+        elif self.new.commit_sha1 and self.old.commit_sha1:
+            # A reference was changed to point at a different commit.
+            # List the revisions that were removed and/or added *from
+            # that reference* by this reference change, along with a
+            # diff between the trees for its old and new values.
+
+            # List of the revisions that were added to the branch by
+            # this update.  Note this list can include revisions that
+            # have already had notification emails; we want such
+            # revisions in the summary even though we will not send
+            # new notification emails for them.
+            printComment("path2")
+            adds = list(generate_summaries(
+                '--topo-order', '--reverse', '%s..%s'
+                % (self.old.commit_sha1, self.new.commit_sha1,)
+                ))
+
+            # List of the revisions that were removed from the branch
+            # by this update.  This will be empty except for
+            # non-fast-forward updates.
+            discards = list(generate_summaries(
+                '%s..%s' % (self.new.commit_sha1, self.old.commit_sha1,)
+                ))
+
+            if adds:
+                new_commits_list = push.get_new_commits(self)
+            else:
+                new_commits_list = []
+            new_commits = CommitSet(new_commits_list)
+
+            if discards:
+                discarded_commits = CommitSet(push.get_discarded_commits(self))
+            else:
+                discarded_commits = CommitSet([])
+
+            if discards and adds:
+                for (sha1, subject) in discards:
+                    if sha1 in discarded_commits:
+                        action = 'discard'
+                    else:
+                        action = 'omit'
+                    yield self.expand(
+                        BRIEF_SUMMARY_TEMPLATE, action=action,
+                        rev_short=sha1, text=subject,
+                        )
+                for (sha1, subject) in adds:
+                    if sha1 in new_commits:
+                        action = 'new'
+                    else:
+                        action = 'add'
+                    yield self.expand(
+                        BRIEF_SUMMARY_TEMPLATE, action=action,
+                        rev_short=sha1, text=subject,
+                        )
+                yield '\n'
+                for line in self.expand_lines(NON_FF_TEMPLATE):
+                    yield line
+
+            elif discards:
+                for (sha1, subject) in discards:
+                    if sha1 in discarded_commits:
+                        action = 'discard'
+                    else:
+                        action = 'omit'
+                    yield self.expand(
+                        BRIEF_SUMMARY_TEMPLATE, action=action,
+                        rev_short=sha1, text=subject,
+                        )
+                yield '\n'
+                for line in self.expand_lines(REWIND_ONLY_TEMPLATE):
+                    yield line
+
+            elif adds:
+                (sha1, subject) = self.old.get_summary()
+                yield self.expand(
+                    BRIEF_SUMMARY_TEMPLATE, action='from',
+                    rev_short=sha1, text=subject,
+                    )
+                for (sha1, subject) in adds:
+                    if sha1 in new_commits:
+                        action = 'new'
+                    else:
+                        action = 'add'
+                    yield self.expand(
+                        BRIEF_SUMMARY_TEMPLATE, action=action,
+                        rev_short=sha1, text=subject,
+                        )
+
+            yield '\n'
+
+            if new_commits:
+                for line in self.generate_new_revision_summary(
+                        len(new_commits), new_commits_list, push):
+                    yield line
+            else:
+                for line in self.expand_lines(NO_NEW_REVISIONS_TEMPLATE):
+                    yield line
+                for line in self.generate_revision_change_graph(push):
+                    yield line
+
+            # The diffstat is shown from the old revision to the new
+            # revision.  This is to show the truth of what happened in
+            # this change.  There's no point showing the stat from the
+            # base to the new revision because the base is effectively a
+            # random revision at this point - the user will be interested
+            # in what this revision changed - including the undoing of
+            # previous revisions in the case of non-fast-forward updates.
+            yield '\n'
+            yield 'Summary of changes:\n'
+            for line in read_git_lines(
+                    ['diff-tree'] +
+                    self.diffopts +
+                    ['%s..%s' % (self.old.commit_sha1, self.new.commit_sha1,)],
+                    keepends=True,
+                    ):
+                yield line
+
+        elif self.old.commit_sha1 and not self.new.commit_sha1:
+            # A reference was deleted.  List the revisions that were
+            # removed from the repository by this reference change.
+            printComment("path3")
+            sha1s = list(push.get_discarded_commits(self))
+            tot = len(sha1s)
+            discarded_revisions = [
+                Revision(self, GitObject(sha1), num=i + 1, tot=tot)
+                for (i, sha1) in enumerate(sha1s)
+                ]
+
+            if discarded_revisions:
+                for line in self.expand_lines(DISCARDED_REVISIONS_TEMPLATE):
+                    yield line
+                yield '\n'
+                for r in discarded_revisions:
+                    (sha1, subject) = r.rev.get_summary()
+                    yield r.expand(
+                        BRIEF_SUMMARY_TEMPLATE, action='discard', text=subject,
+                        )
+                for line in self.generate_revision_change_graph(push):
+                    yield line
+            else:
+                for line in self.expand_lines(NO_DISCARDED_REVISIONS_TEMPLATE):
+                    yield line
+
+        elif not self.old.commit_sha1 and not self.new.commit_sha1:
+            printComment("path4")
+            for line in self.expand_lines(NON_COMMIT_UPDATE_TEMPLATE):
+                yield line
+
+    def generate_create_summary(self, push):
+        """Called for the creation of a reference."""
+
+        # This is a new reference and so oldrev is not valid
+        (sha1, subject) = self.new.get_summary()
+        yield self.expand(
+            BRIEF_SUMMARY_TEMPLATE, action='at',
+            rev_short=sha1, text=subject,
+            )
+        yield '\n'
+
+    def generate_update_summary(self, push):
+        """Called for the change of a pre-existing branch."""
+
+        return iter([])
+
+    def generate_delete_summary(self, push):
+        """Called for the deletion of any type of reference."""
+
+        (sha1, subject) = self.old.get_summary()
+        yield self.expand(
+            BRIEF_SUMMARY_TEMPLATE, action='was',
+            rev_short=sha1, text=subject,
+            )
+        yield '\n'
+
     def get_specific_fromaddr(self):
         return self.environment.from_refchange
 
 
 class BranchChange(ReferenceChange):
     refname_type = 'branch'
-
     def __init__(self, environment, refname, short_refname, old, new, rev):
         ReferenceChange.__init__(
             self, environment,
@@ -1757,11 +2153,15 @@ class BranchChange(ReferenceChange):
             # Cannot determine number of commits in old..new or new..old;
             # don't combine reference/revision emails:
             return None
-
+    ##combine
     def generate_combined_email(self, push, revision, body_filter=None, extra_header_values={}):
+        printComment("BranchChange generate_combined_email")
         values = revision.get_values()
+        # printComment(extra_header_values)
+        # printComment(values)
         if extra_header_values:
             values.update(extra_header_values)
+        printError(values)
         if 'subject' not in extra_header_values:
             values['subject'] = self.expand(COMBINED_REFCHANGE_REVISION_SUBJECT_TEMPLATE, **values)
 
@@ -1778,6 +2178,7 @@ class BranchChange(ReferenceChange):
             revision._content_type = self._content_type
             return revision.generate_browse_link(base_url)
         self.generate_browse_link = revision_gen_link
+
         for line in self.generate_email(push, body_filter, values):
             yield line
 
@@ -1802,18 +2203,17 @@ class BranchChange(ReferenceChange):
             % (self.old.commit_sha1, self.new.commit_sha1,)
             ))
 
-        yield self.expand("The following commit(s) were added to %(refname)s by this push:\n")
-        for (sha1, subject) in adds:
-            yield self.expand(
-                BRIEF_SUMMARY_TEMPLATE, action='new',
-                rev_short=sha1, text=subject,
-                )
+        # yield self.expand("The following commit(s) were added to %(refname)s by this push:\n")
+        # for (sha1, subject) in adds:
+        #     yield self.expand(
+        #         BRIEF_SUMMARY_TEMPLATE, action='new',
+        #         rev_short=sha1, text=subject,
+        #         )
 
-        yield self._single_revision.rev.short + " is described below\n"
-        yield '\n'
+        yield "new revision : " + self._single_revision.rev.short
 
-        for line in self._single_revision.generate_email_body(push):
-            yield line
+        # for line in self._single_revision.generate_email_body(push):
+        #     yield line
 
 
 class AnnotatedTagChange(ReferenceChange):
@@ -3417,7 +3817,7 @@ class GerritEnvironmentLowPrecMixin(Environment):
         else:
             return super(GerritEnvironmentLowPrecMixin, self).get_fromaddr(change)
 
-
+##PUSH
 class Push(object):
     """Represent an entire push (i.e., a group of ReferenceChanges).
 
@@ -3654,8 +4054,9 @@ class Push(object):
 
         spec = self.get_commits_spec('old', reference_change)
         return git_rev_list(spec)
-
+    ##send_mail
     def send_emails(self, mailer, body_filter=None):
+        printComment("PUSH send_mail")
         """Use send all of the notification emails needed for this push.
 
         Use send all of the notification emails (including reference
@@ -3670,6 +4071,8 @@ class Push(object):
         # each new commit.
         unhandled_sha1s = set(self.get_new_commits())
         send_date = IncrementalDateTime()
+
+
         for change in self.changes:
             sha1s = []
             for sha1 in reversed(list(self.get_new_commits(change))):
@@ -3684,51 +4087,65 @@ class Push(object):
                     '*** for %r update %s->%s'
                     % (change.refname, change.old.sha1, change.new.sha1,)
                     )
-            else:
+            else:   
                 if not change.environment.quiet:
                     change.environment.log_msg(
                         'Sending notification emails to: %s' % (change.recipients,))
                 extra_values = {'send_date': next(send_date)}
-
                 rev = change.send_single_combined_email(sha1s)
+                # change.recipients
                 if rev:
+                # if rev:
+                    
+                    printError("rev true")
+                    # 기존의 것!!
                     mailer.send(
                         change.generate_combined_email(self, rev, body_filter, extra_values),
                         rev.recipients,
                         )
+
+
+                    # mailer.send(
+                    #     change.generate_email(self, body_filter, extra_values),
+                    #     change.recipients,
+                    #     )
+
+
                     # This change is now fully handled; no need to handle
                     # individual revisions any further.
                     continue
                 else:
+                    printError("rev false")
+                
                     mailer.send(
                         change.generate_email(self, body_filter, extra_values),
                         change.recipients,
                         )
 
-            max_emails = change.environment.maxcommitemails
-            if max_emails and len(sha1s) > max_emails:
-                change.environment.log_warning(
-                    '*** Too many new commits (%d), not sending commit emails.\n' % len(sha1s) +
-                    '*** Try setting multimailhook.maxCommitEmails to a greater value\n' +
-                    '*** Currently, multimailhook.maxCommitEmails=%d' % max_emails
-                    )
-                return
+            # max_emails = change.environment.maxcommitemails
+            # if max_emails and len(sha1s) > max_emails:
+            #     change.environment.log_warning(
+            #         '*** Too many new commits (%d), not sending commit emails.\n' % len(sha1s) +
+            #         '*** Try setting multimailhook.maxCommitEmails to a greater value\n' +
+            #         '*** Currently, multimailhook.maxCommitEmails=%d' % max_emails
+            #         )
+            #     return
 
-            for (num, sha1) in enumerate(sha1s):
-                rev = Revision(change, GitObject(sha1), num=num + 1, tot=len(sha1s))
-                if len(rev.parents) > 1 and change.environment.excludemergerevisions:
-                    # skipping a merge commit
-                    continue
-                if not rev.recipients and rev.cc_recipients:
-                    change.environment.log_msg('*** Replacing Cc: with To:')
-                    rev.recipients = rev.cc_recipients
-                    rev.cc_recipients = None
-                if rev.recipients:
-                    extra_values = {'send_date': next(send_date)}
-                    mailer.send(
-                        rev.generate_email(self, body_filter, extra_values),
-                        rev.recipients,
-                        )
+            # for (num, sha1) in enumerate(sha1s):
+            #     rev = Revision(change, GitObject(sha1), num=num + 1, tot=len(sha1s))
+            #     if len(rev.parents) > 1 and change.environment.excludemergerevisions:
+            #         # skipping a merge commit
+            #         continue
+            #     if not rev.recipients and rev.cc_recipients:
+            #         change.environment.log_msg('*** Replacing Cc: with To:')
+            #         rev.recipients = rev.cc_recipients
+            #         rev.cc_recipients = None
+            #     if rev.recipients:
+            #         extra_values = {'send_date': next(send_date)}
+            #         mailer.send(
+            #             rev.generate_email(self, body_filter, extra_values),
+            #             rev.recipients,
+            #             )
 
         # Consistency check:
         if unhandled_sha1s:
@@ -3747,7 +4164,9 @@ def include_ref(refname, ref_filter_regex, is_inclusion_filter):
         return not does_match
 
 
-def run_as_post_receive_hook(environment, mailer):
+def run_as_post_receive_hook(environment, mailer):    
+
+    printComment("run_as_post_receive_hook")
     environment.check()
     send_filter_regex, send_is_inclusion_filter = environment.get_ref_filter_regex(True)
     ref_filter_regex, is_inclusion_filter = environment.get_ref_filter_regex(False)
@@ -3777,8 +4196,9 @@ def run_as_post_receive_hook(environment, mailer):
     finally:
         mailer.close()
 
-
+##run_as_update_hook
 def run_as_update_hook(environment, mailer, refname, oldrev, newrev, force_send=False):
+    printComment("main --> run_as_update_hook")
     environment.check()
     send_filter_regex, send_is_inclusion_filter = environment.get_ref_filter_regex(True)
     ref_filter_regex, is_inclusion_filter = environment.get_ref_filter_regex(False)
@@ -3794,6 +4214,8 @@ def run_as_update_hook(environment, mailer, refname, oldrev, newrev, force_send=
             refname,
             ),
         ]
+    # printComment("ReferenceChange create")        
+    # printError(changes)
     if not changes:
         mailer.close()
         return
@@ -4287,6 +4709,12 @@ def main(args):
 
     config = Config('multimailhook')
 
+
+
+
+
+
+
     environment = None
     try:
         environment = choose_environment(
@@ -4321,6 +4749,11 @@ def main(args):
                 "run_as_update_hook: refname=%s, oldrev=%s, newrev=%s, force_send=%s" %
                 (refname, oldrev, newrev, options.force_send))
             run_as_update_hook(environment, mailer, refname, oldrev, newrev, options.force_send)
+            #run_as_update_hook
+
+
+
+
         else:
             run_as_post_receive_hook(environment, mailer)
     except ConfigurationException:
